@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <title>Sega Online - Играйте в ретро игры</title>
+    <meta name="description" content="Играйте в лучшие игры Sega Genesis онлайн бесплатно прямо в браузере. Homebrew, классика и многое другое!">
+    <meta name="keywords" content="sega, genesis, mega drive, онлайн игры, ретро, эмулятор, homebrew">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:8080/">
+    <meta property="og:title" content="Sega Online - Ретро игры в браузере">
+    <meta property="og:description" content="Запускайте любимые игры Sega Genesis на любом устройстве.">
+    <meta property="og:image" content="icon-512.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="http://localhost:8080/">
+    <meta property="twitter:title" content="Sega Online - Ретро игры">
+    <meta property="twitter:description" content="Запускайте любимые игры Sega Genesis на любом устройстве.">
+    <meta property="twitter:image" content="icon-512.png">
+    
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1 data-i18n="site_header">Sega Genesis Games</h1>
+        <nav style="margin-top: 15px;">
+            <a href="index.html" class="nav-btn active" data-i18n="nav_home">🎮 Игры</a>
+            <a href="chat.html" class="nav-btn" data-i18n="nav_chat">💬 Чат</a>
+            <a href="feedback.html" class="nav-btn" data-i18n="nav_feedback">📝 Отзывы</a>
+            <a href="#" id="lang-toggle" class="nav-btn">EN</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div id="controls" style="text-align: right; margin-bottom: 20px;">
+            <label for="file-upload" style="background: #00aaff; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;" data-i18n="upload_label">
+                📂 Загрузить свою игру (.md, .gen)
+            </label>
+            <input id="file-upload" type="file" accept=".md,.gen,.bin,.smd" style="display:none;"/>
+        </div>
+
+        <div id="game-container" style="display:none;">
+            <iframe id="emulator-frame" src="" frameborder="0" width="100%" height="100%" allowfullscreen></iframe>
+            <div class="game-controls">
+                <button id="fullscreen-game" data-i18n="fullscreen">⛶ На весь экран</button>
+                <button id="close-game" data-i18n="close_game">Закрыть игру</button>
+            </div>
+        </div>
+
+        <div id="game-list" class="grid">
+            <!-- Игры будут добавлены здесь через JS -->
+            <div class="game-card" onclick="playGame('cavestory', 'Cave Story (Homebrew)')">
+                <div class="game-icon">🐰</div>
+                <h3>Cave Story</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Platformer</p>
+            </div>
+            <div class="game-card" onclick="playGame('fixitfelix', 'Fix-It Felix Jr.')">
+                <div class="game-icon">🔨</div>
+                <h3>Fix-It Felix Jr.</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Arcade</p>
+            </div>
+            <div class="game-card" onclick="playGame('oldtowers', 'Old Towers')">
+                <div class="game-icon">🏰</div>
+                <h3>Old Towers</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Puzzle Platformer</p>
+            </div>
+            <div class="game-card" onclick="playGame('rickdangerous', 'Rick Dangerous')">
+                <div class="game-icon">🤠</div>
+                <h3>Rick Dangerous</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Action Platformer</p>
+            </div>
+            <div class="game-card" onclick="playGame('miniplanets', 'Mini Planets')">
+                <div class="game-icon">🪐</div>
+                <h3>Mini Planets</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Puzzle</p>
+            </div>
+            <div class="game-card" onclick="playGame('goplanes', 'Go Planes')">
+                <div class="game-icon">✈️</div>
+                <h3>Go Planes</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Arcade / Flight</p>
+            </div>
+            <div class="game-card" onclick="playGame('tiny_toon', 'Tiny Toon Adventures')">
+                <div class="game-icon">🐇</div>
+                <h3>Tiny Toon Adventures</h3>
+                <p style="font-size: 0.8em; color: #aaa;">Platformer (Требуется файл)</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p data-i18n="click_to_start">Нажмите на игру, чтобы начать.</p>
+    </footer>
+
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="i18n.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

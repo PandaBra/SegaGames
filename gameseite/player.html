@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Sega Player</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #game {
+            width: 100%;
+            height: 100%;
+        }
+        
+        
+        /* Mobile specific adjustments */
+        @media (max-width: 768px) {
+            div[id*="gamepad"], div[class*="gamepad"] {
+                /* transform is now handled by JS */
+                bottom: 30px !important; /* Lift up slightly */
+            }
+        }
+
+        .fake-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999 !important;
+            background: #000;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        #fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 70px; /* Left of settings button */
+            z-index: 1000;
+            font-size: 30px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            user-select: none;
+        }
+        #settings-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            font-size: 30px;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            user-select: none;
+        }
+        #settings-panel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 1001;
+            text-align: center;
+            font-family: sans-serif;
+            border: 2px solid #444;
+            min-width: 300px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        #settings-panel h3 {
+            margin-top: 0;
+        }
+        #settings-panel input[type=range] {
+            width: 100%;
+            margin: 20px 0;
+            height: 10px;
+            cursor: pointer;
+        }
+        #settings-panel button {
+            background: #e60012;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game"></div>
+
+    <a id="exit-btn" href="index.html" target="_top">↩️</a>
+    <div id="fullscreen-btn" onclick="toggleFullscreen()">⛶</div>
+    <div id="settings-btn" onclick="toggleSettings()">⚙️</div>
+    
+    <div id="settings-panel">
+        <h3 data-i18n="settings_title">Настройки управления</h3>
+        <label for="scale-slider"><span data-i18n="settings_size">Размер кнопок:</span> <span id="scale-value">150%</span></label>
+        <br>
+        <input type="range" id="scale-slider" min="100" max="300" value="150" step="10" oninput="updateScale(this.value)">
+        <br>
+        <div style="margin: 10px 0;">
+            <button id="lang-toggle-player" onclick="toggleLanguage()">EN</button>
+        </div>
+        <button onclick="toggleSettings()" data-i18n="settings_save">Закрыть</button>
+    </div>
+
+    <script src="i18n.js"></script>
+    <script>
+        // Controller scale logic
+        let currentScale = localStorage.getItem('controllerScale') || 150;
+        
+        // Initialize slider
+        document.getElementById('scale-slider').value = currentScale;
+        document.getElementById('scale-value').innerText = currentScale + '%';
+
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleFullscreen() {
+            const doc = window.document;
+            const docEl = doc.documentElement;
+
+            const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                if (requestFullScreen) {
+                    // Note: webkitRequestFullscreen might not return a Promise in older browsers
+                    const p = requestFullScreen.call(docEl);
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(err => {
+                            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                            toggleFakeFullscreen();
+                        });
+                    }
+                } else {
+                    toggleFakeFullscreen();
+                }
+            } else {
+                if (cancelFullScreen) {
+                    cancelFullScreen.call(doc);
+                } else {
+                    toggleFakeFullscreen();
+                }
+            }
+        }
+
+        function toggleFakeFullscreen() {
+            const gameDiv = document.getElementById('game');
+            if (!gameDiv.classList.contains('fake-fullscreen')) {
+                gameDiv.classList.add('fake-fullscreen');
+                // Hide address bar hint for iOS
+                window.scrollTo(0, 1);
+            } else {
+                gameDiv.classList.remove('fake-fullscreen');
+            }
+        }
+
+        function updateScale(value) {
+            currentScale = value;
+            document.getElementById('scale-value').innerText = value + '%';
+            localStorage.setItem('controllerScale', value);
+            applyScale();
+        }
+
+        function applyScale() {
+            const scaleVal = currentScale / 100;
+            const styleId = 'dynamic-gamepad-style';
+            let styleEl = document.getElementById(styleId);
+            
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                document.head.appendChild(styleEl);
+            }
+
+            // Expanded selectors to catch more potential ID/class names
+            const selectors = 'div[id*="gamepad"], div[class*="gamepad"], #gp_touch_input, .gp_touch, #cp-container, .ejs_touch_controls';
+
+            styleEl.innerHTML = `
+                ${selectors} {
+                    transform: scale(${scaleVal}) !important;
+                    transform-origin: bottom center !important;
+                }
+            `;
+            
+            // Try to apply directly to elements if they exist (fallback)
+            try {
+                const elements = document.querySelectorAll(selectors);
+                elements.forEach(el => {
+                    el.style.transform = `scale(${scaleVal})`;
+                    el.style.transformOrigin = 'bottom center';
+                });
+            } catch (e) {
+                console.error('Error applying scale directly:', e);
+            }
+        }
+
+        // Apply scale initially and periodically to ensure it sticks as emulator loads
+        applyScale();
+        setInterval(applyScale, 2000); 
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get('game');
+        const customUrl = urlParams.get('url');
+
+        let gameUrl = '';
+        if (customUrl) {
+            gameUrl = customUrl;
+        } else if (gameId) {
+            // Default extension .md, but we might want to support others. 
+            // For now assuming .md or .bin. Let's try .md as it's common for Mega Drive.
+            // Also might be .gen
+            gameUrl = 'roms/' + gameId + '.md';
+        }
+
+        if (gameUrl) {
+            // Check if file exists (simple HEAD request) to show better error
+            fetch(gameUrl, { method: 'HEAD' })
+                .then(response => {
+                    if (response.ok) {
+                        loadEmulator();
+                    } else {
+                        showError();
+                    }
+                })
+                .catch(() => {
+                    showError();
+                });
+
+            function loadEmulator() {
+                window.EJS_player = '#game';
+            window.EJS_core = 'segaMD'; // Sega Mega Drive / Genesis
+            window.EJS_gameUrl = gameUrl;
+            window.EJS_pathtodata = 'https://cdn.jsdelivr.net/gh/EmulatorJS/EmulatorJS@main/data/';
+            window.EJS_startOnLoaded = true; // Auto-start for better mobile experience
+            
+            // Using the CDN loader
+                const script = document.createElement('script');
+                script.src = 'https://www.emulatorjs.com/loader.js';
+                document.body.appendChild(script);
+            }
+
+            function showError() {
+                const lang = localStorage.getItem('language') || 'ru';
+                const t = translations[lang] || translations['ru'];
+                
+                document.getElementById('game').innerHTML = `
+                    <div style="color:white; text-align:center; font-family: sans-serif;">
+                        <h2>${t.error_file_not_found}</h2>
+                        <p>${t.error_file_desc} ${gameUrl}</p>
+                        <p>${t.error_file_tip}</p>
+                    </div>
+                `;
+            }
+        } else {
+            const lang = localStorage.getItem('language') || 'ru';
+            const t = translations[lang] || translations['ru'];
+            document.getElementById('game').innerHTML = `<h2 style="color:white">${t.game_not_selected}</h2>`;
+        }
+    </script>
+</body>
+</html>

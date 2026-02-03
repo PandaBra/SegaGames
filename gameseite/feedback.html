@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sega Online - Отзывы</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1 data-i18n="feedback_title">Отзывы и Предложения</h1>
+        <nav>
+            <a href="index.html" class="nav-btn" data-i18n="nav_home">🎮 Игры</a>
+            <a href="chat.html" class="nav-btn" data-i18n="nav_chat">💬 Чат</a>
+            <a href="feedback.html" class="nav-btn active" data-i18n="nav_feedback">📝 Отзывы</a>
+            <a href="#" id="lang-toggle" class="nav-btn">EN</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="feedback-container">
+            <div class="form-card">
+                <h2 data-i18n="feedback_title">Оставить отзыв</h2>
+                <form id="feedback-form">
+                    <input type="text" id="name" placeholder="Ваше имя" required data-i18n-placeholder="feedback_placeholder_name">
+                    <textarea id="comment" placeholder="Напишите ваш отзыв или предложение..." rows="4" required data-i18n-placeholder="feedback_placeholder_text"></textarea>
+                    <button type="submit" data-i18n="feedback_submit">Отправить</button>
+                </form>
+            </div>
+
+            <div id="comments-list">
+                <!-- Комментарии будут загружены здесь -->
+                <p style="text-align:center; color:#888;" data-i18n="feedback_list">Загрузка комментариев...</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p data-i18n="footer_text">Sega Fan Site 2026</p>
+    </footer>
+
+    <script src="i18n.js"></script>
+    <script>
+        const form = document.getElementById('feedback-form');
+        const commentsList = document.getElementById('comments-list');
+
+        // Load comments
+        async function loadComments() {
+            try {
+                const res = await fetch('/api/comments');
+                const comments = await res.json();
+                
+                commentsList.innerHTML = '';
+                if (comments.length === 0) {
+                    commentsList.innerHTML = '<p style="text-align:center; color:#888;">Пока нет отзывов. Будьте первым!</p>';
+                    return;
+                }
+
+                comments.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'comment-card';
+                    div.innerHTML = `
+                        <h4>${escapeHtml(c.name)}</h4>
+                        <p>${escapeHtml(c.text)}</p>
+                    `;
+                    commentsList.appendChild(div);
+                });
+            } catch (e) {
+                commentsList.innerHTML = '<p style="text-align:center; color:red;">Ошибка загрузки комментариев.</p>';
+            }
+        }
+
+        // Submit comment
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const text = document.getElementById('comment').value;
+
+            try {
+                const res = await fetch('/api/comments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, text })
+                });
+
+                if (res.ok) {
+                    form.reset();
+                    loadComments(); // Reload list
+                } else {
+                    alert('Ошибка при отправке');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
+        });
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        loadComments();
+    </script>
+</body>
+</html>

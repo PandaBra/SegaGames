@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sega Online - Чат</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 70vh;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #444;
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-message {
+            background: #333;
+            padding: 10px 15px;
+            border-radius: 10px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .chat-message .author {
+            font-weight: bold;
+            color: #00aaff;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .chat-message .text {
+            color: #eee;
+            word-wrap: break-word;
+        }
+
+        .chat-message .time {
+            font-size: 0.7em;
+            color: #888;
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            background: #1a1a1a;
+            border-top: 1px solid #444;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #chat-name {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+        }
+
+        #chat-text {
+            flex: 3;
+            min-width: 200px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+        }
+
+        #chat-send {
+            background: #00aaff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        #chat-send:hover {
+            background: #0088cc;
+        }
+
+        .disclaimer {
+            text-align: center;
+            font-size: 0.8em;
+            color: #888;
+            padding: 10px;
+            background: #151515;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 600px) {
+            .chat-input-area {
+                flex-direction: column;
+            }
+            #chat-name, #chat-text, #chat-send {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 data-i18n="chat_header">Чат Игроков</h1>
+        <nav style="margin-top: 15px;">
+            <a href="index.html" class="nav-btn" data-i18n="nav_home">🎮 Игры</a>
+            <a href="chat.html" class="nav-btn active" data-i18n="nav_chat">💬 Чат</a>
+            <a href="feedback.html" class="nav-btn" data-i18n="nav_feedback">📝 Отзывы</a>
+            <a href="#" id="lang-toggle" class="nav-btn">EN</a>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="chat-container">
+            <div id="chat-messages">
+                <p style="text-align:center; color:#888;" data-i18n="chat_loading">Загрузка сообщений...</p>
+            </div>
+            <div class="disclaimer" data-i18n="chat_disclaimer">
+                Сообщения удаляются автоматически через 24 часа.
+            </div>
+            <form id="chat-form" class="chat-input-area">
+                <input type="text" id="chat-name" placeholder="Ваше имя" required maxlength="20" data-i18n-placeholder="chat_name_placeholder">
+                <input type="text" id="chat-text" placeholder="Сообщение..." required maxlength="200" autocomplete="off" data-i18n-placeholder="chat_text_placeholder">
+                <button type="submit" id="chat-send" data-i18n="chat_send">Отправить</button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p data-i18n="footer_text">Sega Fan Site 2026</p>
+    </footer>
+
+    <script src="i18n.js"></script>
+    <script>
+        const chatForm = document.getElementById('chat-form');
+        const messagesList = document.getElementById('chat-messages');
+        const nameInput = document.getElementById('chat-name');
+        
+        // Restore name from local storage
+        if (localStorage.getItem('chat_username')) {
+            nameInput.value = localStorage.getItem('chat_username');
+        }
+
+        async function loadMessages() {
+            try {
+                const res = await fetch('/api/chat');
+                const messages = await res.json();
+                
+                messagesList.innerHTML = '';
+                if (messages.length === 0) {
+                    const lang = localStorage.getItem('language') || 'ru';
+                    const emptyText = lang === 'en' ? 'No messages yet. Say hello!' : 'Сообщений пока нет. Скажите привет!';
+                    messagesList.innerHTML = `<p style="text-align:center; color:#888;">${emptyText}</p>`;
+                    return;
+                }
+
+                messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = 'chat-message';
+                    
+                    const date = new Date(msg.timestamp * 1000);
+                    const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    div.innerHTML = `
+                        <div class="author">${escapeHtml(msg.name)}</div>
+                        <div class="text">${escapeHtml(msg.text)}</div>
+                        <div class="time">${timeStr}</div>
+                    `;
+                    messagesList.appendChild(div);
+                });
+                
+                // Scroll to bottom
+                messagesList.scrollTop = messagesList.scrollHeight;
+                
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('chat-name').value;
+            const text = document.getElementById('chat-text').value;
+
+            // Save name
+            localStorage.setItem('chat_username', name);
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, text })
+                });
+
+                if (res.ok) {
+                    document.getElementById('chat-text').value = '';
+                    loadMessages();
+                }
+            } catch (e) {
+                alert('Error sending message');
+            }
+        });
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Auto refresh every 5 seconds
+        loadMessages();
+        setInterval(loadMessages, 5000);
+    </script>
+</body>
+</html>
